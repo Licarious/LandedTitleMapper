@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "xptKQN+Jk10ME1FAssvFMuITLjvxF4NyFVZGVdnitgxeSCfybV8m0gDRQaSQCXr22MFM2rMTIFxHfqRKqXBTEA==",
+  "success": true,
+  "projectFilePath": "B:\\desktop\\-mods-\\MNR2\\Utilities\\LandedTitleMapper\\LandedTitleMapper\\LandedTitleMapper.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\fligh\\.nuget\\packages\\microsoft.win32.systemevents\\7.0.0\\microsoft.win32.systemevents.7.0.0.nupkg.sha512",
+    "C:\\Users\\fligh\\.nuget\\packages\\system.drawing.common\\7.0.0\\system.drawing.common.7.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
