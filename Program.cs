@@ -21,7 +21,12 @@ internal class Program
         parseConfig();
 
         string[] levelList = { "e_", "k_", "d_", "c_" };
-        Dictionary<string, Dictionary<Color, List<Holding>>> holdingColorLevels = new();
+        Dictionary<string, Dictionary<Color, List<Holding>>> holdingColorLevels = new() {
+            { "e_", new Dictionary<Color, List<Holding>>() },
+            { "k_", new Dictionary<Color, List<Holding>>() },
+            { "d_", new Dictionary<Color, List<Holding>>() },
+            { "c_", new Dictionary<Color, List<Holding>>() }
+        };
 
         HashSet<Prov> provSet = parseProvDefinition();
         ParseDefaultMap(provSet);
@@ -29,11 +34,11 @@ internal class Program
         parseMap2(provSet);
         drawBlankMap(provSet, modName);
 
-        HashSet<Holding> holdingSet = parseLandedTitles(provSet);
-
+        HashSet<Holding> holdingSet = ParseLandedTitles(provSet);
+        
         holdingStats(holdingSet, modName, levelList);
 
-
+        
         foreach (string level in levelList) {
             drawLandedTitles(holdingSet, level, modName);
             drawOutline(level, modName);
@@ -44,7 +49,7 @@ internal class Program
         if (drawWorldRegions) {
             parseGeographicalRegions(holdingSet, provSet);
         }
-
+        
         Console.WriteLine(sw.Elapsed+"s");
         
 
@@ -178,120 +183,111 @@ internal class Program
             }
 
         }
-
-        HashSet<Holding> parseLandedTitles(HashSet<Prov> provSet) {
-            Console.WriteLine("Parsing landed titles...");
-
+        
+        HashSet<Holding> ParseLandedTitles(HashSet<Prov> provSet) {
+            string[] titleStart = { "e_", "k_", "d_", "c_", "b_" };
             HashSet<Holding> holdingSet = new();
 
-            //read all txt files in the LandedTitles folder
+            //read all txt files in landed_titles folder
             string[] files = Directory.GetFiles(localDir + @"\Input\landed_titles\", "*.txt", SearchOption.AllDirectories);
-
-            
-            
-            //create dictonary for each level (e_, k_, d_, c_) for holdingColorLevels
-            foreach (string level in levelList) {
-                holdingColorLevels.Add(level, new Dictionary<Color, List<Holding>>());
-            }
-
-
 
             foreach (string file in files) {
                 //read the lines in the file
                 string[] lines = File.ReadAllLines(file);
 
-
-                //landed titles files format in a hierarcical way so we need to keep track of the current holding and the previous holding to know where to add the current holding to the previous holding and the current holding to the holdingSet
                 Holding? currentHolding = null;
-                Holding? parrentHolding = null;
                 int holdingDepth = 0;
-                int currentDepth = 0;
-                
+                //stack for storing the parrent holdings
+                Stack<Holding> parrentHoldings = new();
+                parrentHoldings.Push(null);
 
-                foreach (string l1 in lines) {
-                    string line = CleanLine(l1);
+                int indentation = 0;
+
+                foreach (string line in lines) {
+                    string cl = CleanLine(line);
 
                     //if line is empty or a comment skip it
-                    if (line == "") continue;
+                    if (cl == "") continue;
 
-                    //if line is a holding name
-                    //holding names startwith e_ k_ d_ c_ or b_ then folowed by the name
-                    if (line.StartsWith("e_") || line.StartsWith("k_") || line.StartsWith("d_") || line.StartsWith("c_") || line.StartsWith("b_")) {
+                    //if line starts with a titleStart
+                    if (titleStart.Any(s => cl.StartsWith(s))) {
+                        string tmpName = cl.Split('=')[0].Trim();
 
-                        //if name is already in the holdingSet edit the currentHolding to the holding in the holdingSet
-                        if (holdingSet.Any(h => h.name == line.Split("=")[0].Trim())) {
-                            currentHolding = holdingSet.First(h => h.name == line.Split("=")[0].Trim());
+                        //if a holding is already named tmpName grab it
+                        if (holdingSet.Any(h => h.name == tmpName)) {
+                            currentHolding = holdingSet.First(h => h.name == tmpName);
                             Console.WriteLine("Editing: " + currentHolding.name);
-                            
                         }
-
+                        //else create a new holding
                         else {
-                            //if currentHolding is not null parrent holding is currentHolding
-                            if (currentHolding != null) parrentHolding = currentHolding;
-
-                            currentHolding = new Holding(line.Split("=")[0].Trim(), parrentHolding);
+                            currentHolding = new Holding(tmpName, parrentHoldings.Count > 0 ? parrentHoldings.Peek() : null);
                             holdingSet.Add(currentHolding);
-                            holdingDepth = currentDepth;
                         }
+                        holdingDepth = indentation;
+                        parrentHoldings.Peek()?.subHoldings.Add(currentHolding);
+                        parrentHoldings.Push(currentHolding);
 
                     }
+                    
+                    if (currentHolding != null) {
+                        //if line starts with a color assign the color to the current holding
+                        if (cl.StartsWith("color")) {
+                            ColorToHolding(currentHolding, cl);
 
-                    //if line starts with a color assign the color to the current holding
-                    else if (line.StartsWith("color") && currentHolding != null) {
-                        ColorToHolding(currentHolding, line);
-
-                    }
-
-                    //if line starts with province
-                    else if (line.StartsWith("province") && currentHolding != null) {
-                        List<int> idList = new();
-                        foreach (string s in line.Split("=")[1].Trim().Split(" ")) {
-                            if (s == "#") break;
-                            //try parse int
-                            else if (int.TryParse(s, out int id)) idList.Add(id);
                         }
-                        try {
-                            currentHolding.prov = provSet.First(p => p.id == idList[0]);
-                        }
-                        catch {
-                            Console.WriteLine("Error: could not find prov with id " + idList[0] + " for holding " + currentHolding.name + "\nin file " + file.Split('\\', '/')[^1] + "\nDouble check if that file should be part of your game/mod(s)\n");
-                            
-                        }
-                    }
+                        //if line starts with province
+                        else if (cl.StartsWith("province")) {
+                            List<int> idList = new();
+                            foreach (string s in cl.Split("=")[1].Trim().Split()) {
+                                if (int.TryParse(s, out int id)) idList.Add(id);
+                            }
+                            try {
+                                currentHolding.prov = provSet.First(p => p.id == idList[0]);
+                                currentHolding.coords = currentHolding.prov.coords;
+                                //Console.WriteLine("Assigning " + currentHolding.name + " to " + currentHolding.prov.name);
+                            }
+                            catch {
+                                Console.WriteLine("Error: could not find prov with id " + idList[0] + " for holding " + currentHolding.name + "\nin file " + file.Split('\\', '/')[^1] + "\nDouble check if that file should be part of your game/mod(s)\n");
 
-                    //if line starts with capital
-                    else if (line.StartsWith("capital") && currentHolding != null) {
-                        currentHolding.capitalName = line.Split("=")[1].Split("#")[0].Trim();
-                    }
-
-
-                    foreach (string word in line.Split(" ")) {
-                        //if word is '#' then the rest of the line is a comment and we can skip it
-                        if (word == "#") break;
-                        // if word is '{' then we are increasing the current depth
-                        else if (word == "{") {
-                            currentDepth++;
-                        }
-                        else if (word == "}") {
-                            currentDepth--;
-                            //if the current depth is less than the holding depth then we are done with the holding and we can set the current holding to null and the parrent holding to the holding's parrent
-                            if (currentDepth <= holdingDepth && currentHolding != null) {
-                                //if parrentHolding is not null
-                                parrentHolding?.subHoldings.Add(currentHolding);
-
-                                //if currentHolding is not null
-                                if (currentHolding != null) {
-                                    currentHolding = currentHolding.parent;
-                                    if (parrentHolding != null) parrentHolding = parrentHolding.parent;
-                                    holdingDepth = currentDepth;
-                                }
                             }
                         }
 
+                        //if line starts with capital
+                        else if (cl.StartsWith("capital")) {
+                            currentHolding.capitalName = cl.Split("=")[1].Trim();
+                        }
+
                     }
 
-                }
 
+                    //update indentation
+                    if (cl.Contains('{') || cl.Contains('}')) {
+                        string[] words = cl.Split();
+                        foreach(string word in words) {
+                            if (word.Contains('{')) indentation++;
+                            else if (word.Contains('}')) {
+                                indentation--;
+                                if (indentation <= holdingDepth) {
+                                    if (parrentHoldings.Count > 1) {
+                                        //Console.WriteLine("\tPopping " + parrentHoldings.Peek().name);
+                                        parrentHoldings.Pop();
+                                        if (parrentHoldings.Count > 1) {
+                                            currentHolding = parrentHoldings.Peek();
+                                            holdingDepth = indentation;
+                                        }
+                                        else {
+                                            currentHolding = null;
+                                            holdingDepth = 0;
+                                        }
+                                    }
+                                }
+
+                            }
+
+                        }
+
+                    }
+                }
             }
 
             //for all holdings where capitalName is not "" find the capital holding with that name and set the capital to that holding
@@ -304,12 +300,15 @@ internal class Program
                 catch (Exception e) {
                     Console.WriteLine("Error finding capital for holding " + h.name + " " + e.Message + " likely not assigned " + h.capitalName + " yet");
                 }
+
             }
+
             
-            //for all top level holdings printNestedHolding
+
+            //for all top level holdings setCoords2
             foreach (Holding h in holdingSet.Where(h => h.parent == null)) {
                 h.SetCoords2();
-                //h.printNestedHolding();
+                //h.PrintNestedHolding();
             }
 
             //if any holding in the holdingSet has has a color with an alpha value of 0
@@ -322,14 +321,14 @@ internal class Program
 
             return holdingSet;
         }
-        
+
         //assigne color to holding
         void ColorToHolding(Holding currentHolding, string line) {
             //if line is empty check if holding has any subholdings if it does grab the color from the first subholding and assign it to holding
             if (line == "") {
                 if (currentHolding.subHoldings.Count > 0) currentHolding.color = currentHolding.subHoldings.First().color;
                 //else check if the holding is a barony and assign the prov color to it
-                else if (currentHolding.name.StartsWith("b_")) currentHolding.color = currentHolding.prov.color;
+                else if (currentHolding.name.StartsWith("b_") && currentHolding.prov != null) currentHolding.color = currentHolding.prov.color;
             }
 
             else {
@@ -369,17 +368,20 @@ internal class Program
 
             }
             
-            //add currentHolding to holdingColorLevels
-            string level = currentHolding.name.Split("_")[0] + "_";
+            
+            //level fisrt 2 chars of currentHolding name
+            string level = currentHolding.name[..2].ToLower();
+
             if (holdingColorLevels.ContainsKey(level)) {
                 if (holdingColorLevels[level].ContainsKey(currentHolding.color)) holdingColorLevels[level][currentHolding.color].Add(currentHolding);
                 else holdingColorLevels[level].Add(currentHolding.color, new List<Holding>() { currentHolding });
+                //Console.WriteLine("Adding " + currentHolding.name + " to " + level + " with color " + currentHolding.color);
             }
 
             else if (level.StartsWith("b_")) { }
 
             else Console.WriteLine("level not in holdingColorLevels: " + level);
-
+            
         }
 
 
@@ -389,7 +391,7 @@ internal class Program
         //color is the color holding will be drawn in if it is not null
         //drawLandedTitles returns nothing
         void drawLandedTitles(HashSet<Holding> holdings, string holdingLevel, string modName) {
-            Console.WriteLine("Drawing " +holdingLevel + ":");
+            Console.WriteLine("Drawing " + holdingLevel + ":");
 
             //if folder does not exist create it
             if (!Directory.Exists(localDir + @"\Output\" + modName + @"\Color Map\")) Directory.CreateDirectory(localDir + @"\Output\" + modName + @"\Color Map\");
@@ -947,8 +949,13 @@ internal class Program
                         foreach (int provId in provIds) {
                             //if provId is in provSet
                             if (provDict.ContainsKey(provId)) {
-                                //add provSet[provId] to currentRegion.provs
-                                currentRegion.provs.Add(provDict[provId]);
+                                try {
+                                    //add provSet[provId] to currentRegion.provs
+                                    currentRegion.provs.Add(provDict[provId]);
+                                }
+                                catch {
+                                    Console.WriteLine("Prov" + provId + " was not found in definition.csv\ndouble check that " + file.Split('\\', '/')[^1] + "is accessable by your game/mod(s)");
+                                }
                             }
                         }
 

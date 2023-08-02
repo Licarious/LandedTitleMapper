@@ -29,21 +29,6 @@ namespace LandedTitleMapper
         }
 
         //cascade down the holding tree and find ones where prov is not null and set coords to that prov's coords list
-        public void SetCoords() {
-            foreach (Holding h in subHoldings) {
-                if (h.prov != null) {
-                    h.coords = h.prov.coords;
-                }
-                else {
-                    h.SetCoords();
-                }
-                //add coords from subholding to this holding's coords list
-                if (h.coords.Count > 0) {
-                    coords.UnionWith(h.coords);
-                }
-            }
-            
-        }
         public HashSet<(int x, int y)> SetCoords2() {
             if (prov != null) {
                 coords = prov.coords;

@@ -20,7 +20,7 @@ namespace LandedTitleMapper
 
         //tostring method for printing the province
         public override string ToString() {
-            return $"{id} {name} {color} {type}";
+            return $"{id} {name} {color} {type} {coords.Count}";
         }
 
         

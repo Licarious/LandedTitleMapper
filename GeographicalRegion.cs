@@ -29,7 +29,7 @@ namespace LandedTitleMapper
 
         public void SetCoords() {
             foreach (Holding h in holdings) {
-                h.SetCoords();
+                if (h.coords.Count == 0) h.SetCoords2();
                 coords.UnionWith(h.coords);
             }
             foreach (Prov p in provs) {
