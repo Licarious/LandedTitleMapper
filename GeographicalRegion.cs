@@ -49,13 +49,7 @@ namespace LandedTitleMapper
                 return;
             }
             (center, size) = MaximumRectangle.Center(coords, false, false);
-            /*
-            //if size size.h or size.w is more than 5x the other the do it agin for square
-            if (size.h > size.w * 5 || size.w > size.h * 5) {
-                Console.WriteLine("switching " + name + " to square because" + size);
-                (center, size) = MaximumRectangle.Center(coords, false, true);
-            }
-            */
+            
         }
 
         public void SetColor() {
@@ -85,26 +79,27 @@ namespace LandedTitleMapper
             color = Color.FromArgb(255, 255, 255, 255);
         }
 
-        public void SetNameColor(int distance = 150) {
+        public void SetNameColor(int distance = 128) {
             //find a color that is significantly different from the region's color within the region's subregions, holdings and provs
-            foreach (GeographicalRegion gr in subRegions) {
-                gr.SetNameColor();
-                //if atleast 2 of the rgb values are different by more than distance, set nameColor to gr.color
+            foreach (Prov p in provs) {
+                //if atleast 2 of the rgb values are different by more than distance, set nameColor to p.color
                 int count = 0;
-                if (Math.Abs(gr.color.R - color.R) > distance) {
+                if (Math.Abs(p.color.R - color.R) > distance) {
                     count++;
                 }
-                if (Math.Abs(gr.color.G - color.G) > distance) {
+                if (Math.Abs(p.color.G - color.G) > distance) {
                     count++;
                 }
-                if (Math.Abs(gr.color.B - color.B) > distance) {
+                if (Math.Abs(p.color.B - color.B) > distance) {
                     count++;
                 }
                 if (count >= 2) {
-                    nameColor = gr.color;
-                    return;
+                    nameColor = p.color;
+                    if (Math.Abs(p.color.R - color.R) < 10 && Math.Abs(p.color.G - color.G) < 10 && Math.Abs(p.color.B - color.B) < 10) {
+                        Console.WriteLine("Error: " + name + " color and nameColor are similar");
+                    }
+                    else return;
                 }
-
             }
             foreach (Holding h in holdings) {
                 //if atleast 2 of the rgb values are different by more than distance, set nameColor to h.color
@@ -120,27 +115,38 @@ namespace LandedTitleMapper
                 }
                 if (count >= 2) {
                     nameColor = h.color;
-                    return;
+                    if (Math.Abs(h.color.R - color.R) < 10 && Math.Abs(h.color.G - color.G) < 10 && Math.Abs(h.color.B - color.B) < 10) {
+                        Console.WriteLine("Error: " + name + " color and nameColor are similar");
+                    }
+                    else return;
                 }
             }
-            foreach (Prov p in provs) {
-                //if atleast 2 of the rgb values are different by more than distance, set nameColor to p.color
+            foreach (GeographicalRegion gr in subRegions) {
+                gr.SetNameColor();
+                //if atleast 2 of the rgb values are different by more than distance, set nameColor to gr.color
                 int count = 0;
-                if (Math.Abs(p.color.R - color.R) > distance) {
+                if (Math.Abs(gr.color.R - color.R) > distance) {
                     count++;
                 }
-                if (Math.Abs(p.color.G - color.G) > distance) {
+                if (Math.Abs(gr.color.G - color.G) > distance) {
                     count++;
                 }
-                if (Math.Abs(p.color.B - color.B) > distance) {
+                if (Math.Abs(gr.color.B - color.B) > distance) {
                     count++;
                 }
                 if (count >= 2) {
-                    nameColor = p.color;
-                    return;
+                    nameColor = gr.color;
+                    //if color rgb values are within 10 of each other then print error
+                    if (Math.Abs(gr.color.R - color.R) < 10 && Math.Abs(gr.color.G - color.G) < 10 && Math.Abs(gr.color.B - color.B) < 10) {
+                        Console.WriteLine("Error: " + name + " color and nameColor are similar");
+                    }
+                    else return;
                 }
+
             }
-            //add 100 to rgb values of color, loop if value supasses 255, and set nameColor to that
+            
+            
+            //add distance to rgb values of color, loop if value supasses 255, and set nameColor to that
             int r = (color.R + distance)%255;
             int g = (color.G + distance)% 255;
             int b = (color.B + distance)% 255;

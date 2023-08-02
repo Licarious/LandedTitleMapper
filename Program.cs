@@ -206,9 +206,7 @@ internal class Program
                 Holding? parrentHolding = null;
                 int holdingDepth = 0;
                 int currentDepth = 0;
-
-                //stack for storing the parrent holding
-                Stack<Holding> holdingStack = new();
+                
 
                 foreach (string l1 in lines) {
                     string line = CleanLine(l1);
@@ -996,9 +994,9 @@ internal class Program
             //create a new bitmap with the same size as provinceMap
 
             //check if folder eixts
-            if (!Directory.Exists(localDir + @"\Output\geographical_regions\")) {
+            if (!Directory.Exists(localDir + @"\Output\" + modName + @"\Geographical Regions\")) {
                 //if not, create it
-                Directory.CreateDirectory(localDir + @"\Output\" + modName + @"\geographical_regions\");
+                Directory.CreateDirectory(localDir + @"\Output\" + modName + @"\Geographical Regions\");
             }
 
 
@@ -1103,6 +1101,8 @@ internal class Program
                                 gr.GetCenter();
                             }
 
+                            
+
                             string[] split = gr.name.Replace("__", "_").Split("_");
 
                             int minFontSize = 10;
@@ -1132,16 +1132,21 @@ internal class Program
                                 }
                             }
 
+                            if (gr.color == gr.nameColor) {
+                                Console.WriteLine("\n"+gr.name + "\ncolor\t\t" + gr.color + "\nnameColor:\t" + gr.nameColor + "\n" + nameLines + "\n");
+                                //set to random color
+                                gr.nameColor = Color.FromArgb(255, rnd.Next(256), rnd.Next(256), rnd.Next(256));
+                                Console.WriteLine("new nameColor:\t" + gr.nameColor);
+                            }
+
                             font1 = new(privateFontCollection.Families[0], fontSize * 1.2f);
 
                             g.DrawString(nameLines, font1, new SolidBrush(gr.nameColor), new Point(gr.center.x, gr.center.y), stringFormat);
                             
                         }
-
-
-
+                        
                         //save grMap
-                        grMap.Save(localDir + @"\Output\" + modName + @"\geographical_regions\" + fileName + ".png");
+                        grMap.Save(localDir + @"\Output\" + modName + @"\Geographical Regions\" + fileName + ".png");
                     }
                 }
 
@@ -1183,32 +1188,7 @@ internal class Program
 
             //if there are any remaining parts, add them to the last part
             if (totalParts > 0) {
-                try {
-                    //tmp move first part of last line to the end of the previous line
-                    int tmpLength1 = (split3[^2] + " " + split3[^1].Split()[0]).ToString().Length;
-                    //calc lenght of last line minus first word but plus the remaining total parts
-                    int tmpLength2 = totalLength - split2[^1].Length + totalParts;
-
-                    //lenght of last line plus remaining
-                    int tmpLenght3 = split3[^1].Length + totalParts;
-
-                    //if the diffrence of tmpLength1 and tmpLength2 is closer than the diffrence of tmpLenght3 and split3[split3.Count - 2].Count() then rearage the words, else just add the remaing words to end of split3[^1]
-                    if (Math.Abs(tmpLength1 - tmpLength2) < Math.Abs(tmpLenght3 - split3[^2].Length)) {
-                        //move first part of last line to the end of the previous line
-                        split3[^2] += " " + split3[^1].Split()[0];
-                        //remove first part of last line
-                        split3[^1] = split3[^1].Remove(0, split3[^1].Split()[0].Length + 1).Trim();
-                        //add remaining parts to end of split3
-                        split3[^1] += " " + string.Join(" ", split2[(split2.Length - totalParts + 1)..]);
-                    }
-                    else {
-                        //add remaining parts to end of split3
-                        split3[^1] += " " + string.Join(" ", split2[(split2.Length - totalParts + 1)..]);
-                    }
-                }
-                catch { //dont break
-                    split3[^1] += " " + string.Join(" ", split2[(split2.Length - totalParts)..]);
-                }
+                split3[^1] += " " + string.Join(" ", split2[(split2.Length - totalParts)..]);
             }
 
 

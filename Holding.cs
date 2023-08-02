@@ -24,6 +24,9 @@ namespace LandedTitleMapper
             this.name = name;
             this.parent = parent;
         }
+        public Holding(string name) {
+            this.name = name;
+        }
 
         //cascade down the holding tree and find ones where prov is not null and set coords to that prov's coords list
         public void SetCoords() {
