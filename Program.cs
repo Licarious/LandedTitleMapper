@@ -250,7 +250,13 @@ internal class Program
                             //try parse int
                             else if (int.TryParse(s, out int id)) idList.Add(id);
                         }
-                        currentHolding.prov = provSet.First(p => p.id == idList[0]);
+                        try {
+                            currentHolding.prov = provSet.First(p => p.id == idList[0]);
+                        }
+                        catch {
+                            Console.WriteLine("Error: could not find prov with id " + idList[0] + " for holding " + currentHolding.name + "\nin file " + file.Split('\\', '/')[^1] + "\nDouble check if that file should be part of your game/mod(s)\n");
+                            
+                        }
                     }
 
                     //if line starts with capital
