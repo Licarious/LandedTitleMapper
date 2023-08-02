@@ -1056,9 +1056,10 @@ internal class Program
                 //if the list is not empty
                 if (kvp.Value.Count > 0) {
                     Console.WriteLine("\n" + kvp.Key + ":\t\t" + sw.Elapsed +"s");
-                    //sort sortedGR by coords.Count from highest to lowest
+                    //sort sortedGR by coords.Count from highest to lowest and remove all entries with coords.Count == 0
                     kvp.Value.Sort((x, y) => y.coords.Count.CompareTo(x.coords.Count));
-                    
+                    kvp.Value.RemoveAll(x => x.coords.Count == 0);
+
                     while (kvp.Value.Count > 0) {
 
                         List<GeographicalRegion> group = new();
