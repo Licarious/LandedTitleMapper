@@ -1169,8 +1169,10 @@ internal class Program
                                 }
                             }
 
-                            if (gr.color == gr.nameColor) {
-                                Console.WriteLine("\n"+gr.name + "\ncolor\t\t" + gr.color + "\nnameColor:\t" + gr.nameColor + "\n" + nameLines + "\n");
+                            if(gr.nameColor.A == 0) gr.SetNameColor();
+
+                            if (gr.color == gr.nameColor || gr.nameColor.A == 0) {
+                                Console.WriteLine("\n"+gr.name + "\ncolor\t\t" + gr.color + "\nnameColor:\t" + gr.nameColor + "\n" + nameLines);
                                 //set to random color
                                 gr.nameColor = Color.FromArgb(255, rnd.Next(256), rnd.Next(256), rnd.Next(256));
                                 Console.WriteLine("new nameColor:\t" + gr.nameColor);
