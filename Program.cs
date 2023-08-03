@@ -5,6 +5,7 @@ using System.Drawing.Text;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 internal class Program
 {
@@ -17,7 +18,9 @@ internal class Program
 
         string modName = "MPE July 30";
         bool splitSingleWord = true;
-        List<String> geographicalGrouping = new();
+        List<string> geographicalGrouping = new();
+        List<string> geographicalGroupingStartsWith = new();
+        List<string> geographicalGroupingEndsWith = new();
         parseConfig();
 
         string[] levelList = { "e_", "k_", "d_", "c_" };
@@ -1045,7 +1048,27 @@ internal class Program
             foreach (GeographicalRegion gr in geographicalRegionsDict.Values) {
                 bool found = false;
                 foreach (string key in GRGroupsDict.Keys) {
-                    if (gr.name.Contains(key)) {
+                    //if key is in geographicalGroupingStartsWith
+                    if (geographicalGroupingStartsWith.Contains(key)) {
+                        //if gr.name starts with key
+                        if (gr.name.ToLower().StartsWith(key)) {
+                            //add gr to GRGroupsDict[key]
+                            GRGroupsDict[key].Add(gr);
+                            found = true;
+                            break;
+                        }
+                    }
+                    else if (geographicalGroupingEndsWith.Contains(key)) {
+                        //if gr.name ends with key
+                        if (gr.name.ToLower().StartsWith(key)) {
+                            //add gr to GRGroupsDict[key]
+                            GRGroupsDict[key].Add(gr);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    else if (gr.name.ToLower().Contains(key)) {
                         GRGroupsDict[key].Add(gr);
                         found = true;
                         break;
@@ -1257,8 +1280,22 @@ internal class Program
                             //split between , if there is a , on the line
                             string[] split3 = split2[0].Split(",");
                             foreach (string s in split3) {
+                                string startWithCheck = s.Split("\"")[0].Trim();
+                                string[] parts = s.Split("\"");
+                                try {
+                                    if (parts[0].Contains('*')) {
+                                        geographicalGroupingEndsWith.Add(s.Split("\"")[1].Trim().ToLower());
+                                    }
+                                    else if (parts[2].Contains('*')) {
+                                        geographicalGroupingStartsWith.Add(s.Split("\"")[1].Trim().ToLower());
+                                    }
+
+                                }
+                                catch {
+
+                                }
                                 //add each string to the geographicalGrouping list
-                                geographicalGrouping.Add(s.Replace("\"","").Trim());
+                                geographicalGrouping.Add(s.Split("\"")[1].Trim().ToLower());
                             }
                         }
                     }
@@ -1272,7 +1309,11 @@ internal class Program
             //print out the config options
             Console.WriteLine("name: " + modName);
             Console.WriteLine("splitSingleWord: " + splitSingleWord);
-            Console.WriteLine("geographicalGrouping: " + String.Join("  ", geographicalGrouping));
+            Console.WriteLine("geographicalGrouping: " + string.Join("  ", geographicalGrouping));
+            Console.WriteLine("geographicalGroupingStartsWith: " + string.Join("  ", geographicalGroupingStartsWith));
+            Console.WriteLine("geographicalGroupingEndsWith: " + string.Join("  ", geographicalGroupingEndsWith));
+                
+
 
         }
 
